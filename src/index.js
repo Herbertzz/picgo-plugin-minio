@@ -1,7 +1,13 @@
-// const logger = require('@varnxy/logger')
-// logger.setDirectory('/Users/zhang/Work/WorkSpaces/WebWorkSpace/picgo-plugin-gitlab/logs')
-// let log = logger('plugin')
 const Minio = require('minio')
+const imageMime = {
+  gif: 'image/gif',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  bmp: 'image/bmp',
+  ico: 'image/x-icon',
+  webp: 'image/webp'
+}
 
 module.exports = (ctx) => {
   const register = () => {
@@ -16,98 +22,64 @@ module.exports = (ctx) => {
     if (!userConfig) {
       throw new Error('Can\'t find uploader config')
     }
+    const useSSL = userConfig.useSSL === 'true'
+    const port = userConfig.port ? parseInt(userConfig.port)
+      : (useSSL ? 443 : 80)
     const minioClient = new Minio.Client({
       endPoint: userConfig.endPoint,
-      port: userConfig.port,
-      useSSL: userConfig.useSSL,
+      port: port,
+      useSSL: useSSL,
       accessKey: userConfig.accessKey,
       secretKey: userConfig.secretKey
-    });
+    })
 
-    // 创建一个bucket
-    minioClient.makeBucket('europetrip', 'picgo', function(err) {
-      if (err) return console.log(err)
-
-
-      try {
-        let imgList = ctx.output
-        console.log(imgList)
-        // for (let i in imgList) {
-        //   let image = imgList[i].buffer
-        //   if (!image && imgList[i].base64Image) {
-        //     image = Buffer.from(imgList[i].base64Image, 'base64')
-        //   }
-        //
-        //   const postConfig = postOptions(realUrl, token, image, imgList[i].fileName)
-        //   let body = await ctx.Request.request(postConfig)
-        //   delete imgList[i].base64Image
-        //   delete imgList[i].buffer
-        //   body = JSON.parse(body)
-        //   imgList[i]['imgUrl'] = realImgUrlPre + body['url']
-        // }
-      } catch (err) {
-        ctx.emit('notification', {
-          title: '上传失败',
-          body: JSON.stringify(err)
-        })
+    const bucket = userConfig.bucket
+    try {
+      // 检查bucket是否存在, 不存在则报错
+      if (!await minioClient.bucketExists(bucket)) {
+        throw 'Bucket: ' + bucket + '不存在，请先创建该Bucket'
+        // 则创建该bucket(暂不实现该功能)
+        // await minioClient.makeBucket(bucket, 'us-east-1')
       }
-      // const metaData = {
-      //   'Content-Type': 'application/octet-stream',
-      //   'X-Amz-Meta-Testing': 1234,
-      //   'example': 5678
-      // }
-      // // Using fPutObject API upload your file to the bucket europetrip.
-      // minioClient.fPutObject('europetrip', 'photos-europe.tar', file, metaData, function(err, etag) {
-      //   if (err) return console.log(err)
-      //   console.log('File uploaded successfully.')
-      // });
-    });
+    } catch (err) {
+      ctx.emit('notification', {
+        title: '上传失败',
+        body: JSON.stringify(err)
+      })
+      return
+    }
 
-    // try {
-    //   let imgList = ctx.output
-    //   for (let i in imgList) {
-    //     let image = imgList[i].buffer
-    //     if (!image && imgList[i].base64Image) {
-    //       image = Buffer.from(imgList[i].base64Image, 'base64')
-    //     }
-    //
-    //     const postConfig = postOptions(realUrl, token, image, imgList[i].fileName)
-    //     let body = await ctx.Request.request(postConfig)
-    //     delete imgList[i].base64Image
-    //     delete imgList[i].buffer
-    //     body = JSON.parse(body)
-    //     imgList[i]['imgUrl'] = realImgUrlPre + body['url']
-    //   }
-    // } catch (err) {
-    //   ctx.emit('notification', {
-    //     title: '上传失败',
-    //     body: JSON.stringify(err)
-    //   })
-    // }
+    // 图片基本url拼接
+    let realImgUrlPre = useSSL ? 'https://' : 'http://'
+    realImgUrlPre += userConfig.endPoint + ':' + port
+    realImgUrlPre += '/' + bucket + '/'
+
+    // 上传图片
+    try {
+      let imgList = ctx.output
+      for (let i = 0, len = imgList.length; i < len; i++) {
+        let image = imgList[i].buffer
+        if (!image && imgList[i].base64Image) {
+          image = Buffer.from(imgList[i].base64Image, 'base64')
+        }
+
+        let ext = imgList[i].extname.replace('.', '')
+        let metaData = {
+          'Content-Type': imageMime[ext] ? imageMime[ext] : 'application/octet-stream'
+        }
+        await minioClient.putObject(bucket, imgList[i].fileName, image, image.length, metaData)
+
+        delete imgList[i].base64Image
+        delete imgList[i].buffer
+        imgList[i]['imgUrl'] = realImgUrlPre + imgList[i].fileName
+      }
+    } catch (err) {
+      ctx.emit('notification', {
+        title: '上传失败',
+        body: JSON.stringify(err)
+      })
+    }
   }
-
-  // const postOptions = (url, token, image, fileName) => {
-  //   let headers = {
-  //     contentType: 'multipart/form-data',
-  //     'User-Agent': 'PicGo',
-  //     'PRIVATE-TOKEN': token
-  //   }
-  //   let formData = {
-  //     'file': {
-  //       'value': image,
-  //       'options': {
-  //         'filename': fileName
-  //       }
-  //     }
-  //   }
-  //   const opts = {
-  //     method: 'POST',
-  //     url: url,
-  //     headers: headers,
-  //     formData: formData
-  //   }
-  //   return opts
-  // }
 
   const config = ctx => {
     let userConfig = ctx.getConfig('picBed.minio')
@@ -122,6 +94,22 @@ module.exports = (ctx) => {
         required: true,
         message: 'minio.com',
         alias: 'endPoint'
+      },
+      {
+        name: 'port',
+        type: 'input',
+        default: userConfig.port,
+        required: false,
+        message: 'port',
+        alias: 'port'
+      },
+      {
+        name: 'useSSL',
+        type: 'input',
+        default: userConfig.useSSL,
+        required: true,
+        message: 'true',
+        alias: 'useSSL'
       },
       {
         name: 'accessKey',
@@ -140,18 +128,17 @@ module.exports = (ctx) => {
         alias: 'secretKey'
       },
       {
-        name: 'useSSL',
+        name: 'bucket',
         type: 'input',
-        default: userConfig.useSSL,
+        default: userConfig.bucket,
         required: true,
-        message: 'true',
-        alias: 'useSSL'
+        message: 'bucket',
+        alias: 'bucket'
       }
     ]
   }
   return {
     uploader: 'minio',
-    // transformer: 'gitlab',
     // config: config,
     register
 
