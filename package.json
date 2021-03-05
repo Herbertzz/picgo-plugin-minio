@@ -6,7 +6,7 @@
   "publishConfig": {
     "access": "public"
   },
-  "homepage": "https://github.com/herbertzz/picgo-plugin-minio",
+  "homepage": "https://github.com/Herbertzz/picgo-plugin-minio",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "patch": "npm version patch && git push origin master && git push origin --tags",
@@ -28,5 +28,8 @@
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
     "@varnxy/logger": "^1.1.2"
+  },
+  "dependencies": {
+    "minio": "^7.0.18"
   }
 }

@@ -1,115 +1,156 @@
 // const logger = require('@varnxy/logger')
 // logger.setDirectory('/Users/zhang/Work/WorkSpaces/WebWorkSpace/picgo-plugin-gitlab/logs')
 // let log = logger('plugin')
+const Minio = require('minio')
 
 module.exports = (ctx) => {
   const register = () => {
-    ctx.helper.uploader.register('gitlab', {
+    ctx.helper.uploader.register('minio', {
       handle,
-      name: 'GitLab图床',
+      name: 'MinIO图床',
       config: config
     })
   }
   const handle = async function (ctx) {
-    let userConfig = ctx.getConfig('picBed.gitlab')
+    let userConfig = ctx.getConfig('picBed.minio')
     if (!userConfig) {
       throw new Error('Can\'t find uploader config')
     }
-    const url = userConfig.URL
-    const group = userConfig.Group
-    const project = userConfig.Project
-    const token = userConfig.Token
-    const realImgUrlPre = url + '/' + group + '/' + project
-    const realUrl = url + '/api/v4/projects/' + group + '%2F' + project + '/uploads'
+    const minioClient = new Minio.Client({
+      endPoint: userConfig.endPoint,
+      port: userConfig.port,
+      useSSL: userConfig.useSSL,
+      accessKey: userConfig.accessKey,
+      secretKey: userConfig.secretKey
+    });
 
-    try {
-      let imgList = ctx.output
-      for (let i in imgList) {
-        let image = imgList[i].buffer
-        if (!image && imgList[i].base64Image) {
-          image = Buffer.from(imgList[i].base64Image, 'base64')
-        }
+    // 创建一个bucket
+    minioClient.makeBucket('europetrip', 'picgo', function(err) {
+      if (err) return console.log(err)
 
-        const postConfig = postOptions(realUrl, token, image, imgList[i].fileName)
-        let body = await ctx.Request.request(postConfig)
-        delete imgList[i].base64Image
-        delete imgList[i].buffer
-        body = JSON.parse(body)
-        imgList[i]['imgUrl'] = realImgUrlPre + body['url']
+
+      try {
+        let imgList = ctx.output
+        console.log(imgList)
+        // for (let i in imgList) {
+        //   let image = imgList[i].buffer
+        //   if (!image && imgList[i].base64Image) {
+        //     image = Buffer.from(imgList[i].base64Image, 'base64')
+        //   }
+        //
+        //   const postConfig = postOptions(realUrl, token, image, imgList[i].fileName)
+        //   let body = await ctx.Request.request(postConfig)
+        //   delete imgList[i].base64Image
+        //   delete imgList[i].buffer
+        //   body = JSON.parse(body)
+        //   imgList[i]['imgUrl'] = realImgUrlPre + body['url']
+        // }
+      } catch (err) {
+        ctx.emit('notification', {
+          title: '上传失败',
+          body: JSON.stringify(err)
+        })
       }
-    } catch (err) {
-      ctx.emit('notification', {
-        title: '上传失败',
-        body: JSON.stringify(err)
-      })
-    }
+      // const metaData = {
+      //   'Content-Type': 'application/octet-stream',
+      //   'X-Amz-Meta-Testing': 1234,
+      //   'example': 5678
+      // }
+      // // Using fPutObject API upload your file to the bucket europetrip.
+      // minioClient.fPutObject('europetrip', 'photos-europe.tar', file, metaData, function(err, etag) {
+      //   if (err) return console.log(err)
+      //   console.log('File uploaded successfully.')
+      // });
+    });
+
+    // try {
+    //   let imgList = ctx.output
+    //   for (let i in imgList) {
+    //     let image = imgList[i].buffer
+    //     if (!image && imgList[i].base64Image) {
+    //       image = Buffer.from(imgList[i].base64Image, 'base64')
+    //     }
+    //
+    //     const postConfig = postOptions(realUrl, token, image, imgList[i].fileName)
+    //     let body = await ctx.Request.request(postConfig)
+    //     delete imgList[i].base64Image
+    //     delete imgList[i].buffer
+    //     body = JSON.parse(body)
+    //     imgList[i]['imgUrl'] = realImgUrlPre + body['url']
+    //   }
+    // } catch (err) {
+    //   ctx.emit('notification', {
+    //     title: '上传失败',
+    //     body: JSON.stringify(err)
+    //   })
+    // }
   }
 
-  const postOptions = (url, token, image, fileName) => {
-    let headers = {
-      contentType: 'multipart/form-data',
-      'User-Agent': 'PicGo',
-      'PRIVATE-TOKEN': token
-    }
-    let formData = {
-      'file': {
-        'value': image,
-        'options': {
-          'filename': fileName
-        }
-      }
-    }
-    const opts = {
-      method: 'POST',
-      url: url,
-      headers: headers,
-      formData: formData
-    }
-    return opts
-  }
+  // const postOptions = (url, token, image, fileName) => {
+  //   let headers = {
+  //     contentType: 'multipart/form-data',
+  //     'User-Agent': 'PicGo',
+  //     'PRIVATE-TOKEN': token
+  //   }
+  //   let formData = {
+  //     'file': {
+  //       'value': image,
+  //       'options': {
+  //         'filename': fileName
+  //       }
+  //     }
+  //   }
+  //   const opts = {
+  //     method: 'POST',
+  //     url: url,
+  //     headers: headers,
+  //     formData: formData
+  //   }
+  //   return opts
+  // }
 
   const config = ctx => {
-    let userConfig = ctx.getConfig('picBed.gitlab')
+    let userConfig = ctx.getConfig('picBed.minio')
     if (!userConfig) {
       userConfig = {}
     }
     return [
       {
-        name: 'URL',
+        name: 'endPoint',
         type: 'input',
-        default: userConfig.URL,
+        default: userConfig.endPoint,
         required: true,
-        message: 'https://gitlab.com',
-        alias: 'URL'
+        message: 'minio.com',
+        alias: 'endPoint'
       },
       {
-        name: 'Group',
+        name: 'accessKey',
         type: 'input',
-        default: userConfig.Group,
+        default: userConfig.accessKey,
         required: true,
-        message: 'Group',
-        alias: 'Group'
+        message: 'accessKey',
+        alias: 'accessKey'
       },
       {
-        name: 'Project',
+        name: 'secretKey',
         type: 'input',
-        default: userConfig.Project,
+        default: userConfig.secretKey,
         required: true,
-        message: 'Project',
-        alias: 'Project'
+        message: 'secretKey',
+        alias: 'secretKey'
       },
       {
-        name: 'Token',
+        name: 'useSSL',
         type: 'input',
-        default: userConfig.Token,
+        default: userConfig.useSSL,
         required: true,
-        message: 'aLS32eaxs1GLvKcv9f-k',
-        alias: 'Token'
+        message: 'true',
+        alias: 'useSSL'
       }
     ]
   }
   return {
-    uploader: 'gitlab',
+    uploader: 'minio',
     // transformer: 'gitlab',
     // config: config,
     register
