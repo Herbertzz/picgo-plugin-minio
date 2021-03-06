@@ -11,6 +11,30 @@ const imageMime = {
 
 module.exports = (ctx) => {
   const register = () => {
+    ctx.on('remove', async files => {
+      try {
+        const { minioClient, bucket } = initMinioClient(ctx)
+
+        for (let i = 0, len = files.length; i < len; i++) {
+          let file = files[i]
+          if (file.type === 'minio') {
+            // 检查文件是否存在，不存在则会抛出NotFound异常
+            await minioClient.statObject(bucket, file.fileName)
+            // 删除文件
+            await minioClient.removeObject(bucket, file.fileName)
+          }
+        }
+      } catch (err) {
+        if (err.code !== 'NotFound') {
+          ctx.log.error(JSON.stringify(err))
+          ctx.emit('notification', {
+            title: '删除失败',
+            body: JSON.stringify(err)
+          })
+        }
+      }
+    })
+
     ctx.helper.uploader.register('minio', {
       handle,
       name: 'MinIO图床',
@@ -18,22 +42,7 @@ module.exports = (ctx) => {
     })
   }
   const handle = async function (ctx) {
-    let userConfig = ctx.getConfig('picBed.minio')
-    if (!userConfig) {
-      throw new Error('Can\'t find uploader config')
-    }
-    const useSSL = userConfig.useSSL === 'true'
-    const port = userConfig.port ? parseInt(userConfig.port)
-      : (useSSL ? 443 : 80)
-    const minioClient = new Minio.Client({
-      endPoint: userConfig.endPoint,
-      port: port,
-      useSSL: useSSL,
-      accessKey: userConfig.accessKey,
-      secretKey: userConfig.secretKey
-    })
-
-    const bucket = userConfig.bucket
+    const { minioClient, bucket, realImgUrlPre } = initMinioClient(ctx)
     try {
       // 检查bucket是否存在, 不存在则报错
       if (!await minioClient.bucketExists(bucket)) {
@@ -49,15 +58,22 @@ module.exports = (ctx) => {
       return
     }
 
-    // 图片基本url拼接
-    let realImgUrlPre = useSSL ? 'https://' : 'http://'
-    realImgUrlPre += userConfig.endPoint + ':' + port
-    realImgUrlPre += '/' + bucket + '/'
-
     // 上传图片
     try {
       let imgList = ctx.output
       for (let i = 0, len = imgList.length; i < len; i++) {
+        try {
+          // 检查文件是否存在，不存在则会抛出NotFound异常
+          await minioClient.statObject(bucket, imgList[i].fileName)
+          // 存在文件，则删除该文件
+          delete imgList[i]
+          continue
+        } catch (err) {
+          if (err.code !== 'NotFound') {
+            throw err
+          }
+        }
+
         let image = imgList[i].buffer
         if (!image && imgList[i].base64Image) {
           image = Buffer.from(imgList[i].base64Image, 'base64')
@@ -73,12 +89,53 @@ module.exports = (ctx) => {
         delete imgList[i].buffer
         imgList[i]['imgUrl'] = realImgUrlPre + imgList[i].fileName
       }
+
+      // 清除数组中的空值
+      let len = imgList.length
+      imgList = imgList.filter(e => e)
+      if (len !== imgList.length) {
+        let s = len - imgList.length
+        let msg = `存在${s}个同名文件(处理方式: 跳过)`
+        ctx.log.warn(msg)
+        ctx.emit('notification', {
+          title: '上传异常',
+          body: msg
+        })
+      }
+      ctx.output = imgList
     } catch (err) {
       ctx.emit('notification', {
         title: '上传失败',
         body: JSON.stringify(err)
       })
     }
+  }
+
+  // 初始化minio客户端
+  const initMinioClient = (ctx) => {
+    let userConfig = ctx.getConfig('picBed.minio')
+    if (!userConfig) {
+      throw new Error('uploader 配置不存在')
+    }
+
+    const useSSL = userConfig.useSSL === 'true'
+    const port = userConfig.port ? parseInt(userConfig.port)
+      : (useSSL ? 443 : 80)
+
+    const minioClient = new Minio.Client({
+      endPoint: userConfig.endPoint,
+      port: port,
+      useSSL: useSSL,
+      accessKey: userConfig.accessKey,
+      secretKey: userConfig.secretKey
+    })
+
+    // 图片基本url拼接
+    let realImgUrlPre = useSSL ? 'https://' : 'http://'
+    realImgUrlPre += userConfig.endPoint + ':' + port
+    realImgUrlPre += '/' + userConfig.bucket + '/'
+
+    return { minioClient, bucket: userConfig.bucket, realImgUrlPre }
   }
 
   const config = ctx => {
