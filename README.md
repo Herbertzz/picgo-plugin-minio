@@ -20,7 +20,7 @@ npm i picgo-plugin-minio
 * secretKey	Secret key是你账户的密码。
 * bucket    存储文件的桶名。
   
-![Demo](./static/demo.jpg?raw=true)
+![Demo](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/static/demo.jpg?raw=true)
 
 ### Q&A
 * Q: MinIO 无法公开访问？
