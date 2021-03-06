@@ -19,6 +19,8 @@ npm i picgo-plugin-minio
 * accessKey	Access key是唯一标识你的账户的用户ID。
 * secretKey	Secret key是你账户的密码。
 * bucket    存储文件的桶名。
+  
+![Demo](./static/demo.jpg?raw=true)
 
 ### Q&A
 * Q: MinIO 无法公开访问？
