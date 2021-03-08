@@ -19,7 +19,7 @@ npm i picgo-plugin-minio
 * `accessKey`	Access key是唯一标识你的账户的用户ID。
 * `secretKey`	Secret key是你账户的密码。
 * `bucket`      存储文件的桶名。
-* `跳过同名图片`  开启时，会检查图床是否存在同名的文件，存在则跳过该文件的上传；默认: true, 不使用请设为false。(2.1.1+)
+* `跳过同名图片`  开启时，会检查图床是否存在同名的文件，存在则跳过该文件的上传；默认: true, 不使用请设为false。(2.1.0+)
   
 ![Demo](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/static/demo.jpg?raw=true)
 
