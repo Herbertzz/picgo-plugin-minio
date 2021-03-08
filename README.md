@@ -13,12 +13,13 @@ npm i picgo-plugin-minio
 ```
 
 ### 使用
-* endPoint	对象存储服务的URL
-* port	    TCP/IP端口号。可选值，如果是使用HTTP的话，默认值是80；如果使用HTTPS的话，默认值是443。
-* useSSL	true代表使用HTTPS
-* accessKey	Access key是唯一标识你的账户的用户ID。
-* secretKey	Secret key是你账户的密码。
-* bucket    存储文件的桶名。
+* `endPoint`	对象存储服务的URL
+* `port`	    TCP/IP端口号。可选值，如果是使用HTTP的话，默认值是80；如果使用HTTPS的话，默认值是443。
+* `useSSL`	    true代表使用HTTPS
+* `accessKey`	Access key是唯一标识你的账户的用户ID。
+* `secretKey`	Secret key是你账户的密码。
+* `bucket`      存储文件的桶名。
+* `跳过同名图片`  开启时，会检查图床是否存在同名的文件，存在则跳过该文件的上传；默认: true, 不使用请设为false。(2.1.1+)
   
 ![Demo](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/static/demo.jpg?raw=true)
 
