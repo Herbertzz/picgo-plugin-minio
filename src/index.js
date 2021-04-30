@@ -14,14 +14,17 @@ module.exports = (ctx) => {
     ctx.on('remove', async files => {
       try {
         const { minioClient, config } = await initMinioClient(ctx)
+        // 获取基础存放目录路径
+        const directory = baseDir(config)
 
         for (let i = 0, len = files.length; i < len; i++) {
           let file = files[i]
           if (file.type === 'minio') {
+            const filepath = directory + file.fileName
             // 检查文件是否存在，不存在则会抛出NotFound异常
-            await minioClient.statObject(config.bucket, file.fileName)
+            await minioClient.statObject(config.bucket, filepath)
             // 删除文件
-            await minioClient.removeObject(config.bucket, file.fileName)
+            await minioClient.removeObject(config.bucket, filepath)
           }
         }
       } catch (err) {
@@ -44,6 +47,8 @@ module.exports = (ctx) => {
   const handle = async function (ctx) {
     try {
       const { minioClient, config, realImgUrlPre } = await initMinioClient(ctx)
+      // 获取基础存放目录路径
+      const  directory = baseDir(config)
 
       // 上传图片
       let imgList = ctx.output
@@ -72,11 +77,12 @@ module.exports = (ctx) => {
         let metaData = {
           'Content-Type': imageMime[ext] ? imageMime[ext] : 'application/octet-stream'
         }
-        await minioClient.putObject(config.bucket, imgList[i].fileName, image, image.length, metaData)
+        let file = directory + imgList[i].fileName
+        await minioClient.putObject(config.bucket, file, image, image.length, metaData)
 
         delete imgList[i].base64Image
         delete imgList[i].buffer
-        imgList[i]['imgUrl'] = realImgUrlPre + imgList[i].fileName
+        imgList[i]['imgUrl'] = realImgUrlPre + file
       }
 
       if (isFilterSameNameImage) {
@@ -101,6 +107,17 @@ module.exports = (ctx) => {
         body: JSON.stringify(err)
       })
     }
+  }
+
+  // 存放目录配置
+  const baseDir = (config) => {
+    if (config.directory) {
+      if ([...config.directory].pop() !== '/') {
+        return config.directory + '/'
+      }
+      return config.directory
+    }
+    return ''
   }
 
   // 初始化minio客户端
@@ -198,6 +215,14 @@ module.exports = (ctx) => {
         required: false,
         message: '默认: true, 如不使用该功能请设置为false',
         alias: '跳过同名图片'
+      },
+      {
+        name: 'directory',
+        type: 'input',
+        default: userConfig.directory,
+        required: false,
+        message: '存放目录',
+        alias: '存放目录'
       }
     ]
   }
