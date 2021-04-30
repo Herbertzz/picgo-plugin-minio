@@ -62,9 +62,8 @@ module.exports = (ctx) => {
 
       // 上传图片
       let imgList = ctx.output
-      let isFilterSameNameImage = config.isFilterSameNameImage !== 'false'
       for (let i = 0, len = imgList.length; i < len; i++) {
-        if (isFilterSameNameImage) {
+        if (config.isFilterSameNameImage) {
           try {
             // 检查文件是否存在，不存在则会抛出NotFound异常
             await minioClient.statObject(config.bucket, imgList[i].fileName)
@@ -96,7 +95,7 @@ module.exports = (ctx) => {
         imgList[i]['fileName'] = file
       }
 
-      if (isFilterSameNameImage) {
+      if (config.isFilterSameNameImage) {
         // 清除数组中的空值
         let len = imgList.length
         imgList = imgList.filter(e => e)
@@ -127,14 +126,13 @@ module.exports = (ctx) => {
       throw 'MinIO图床设置不存在[401]'
     }
 
-    const useSSL = userConfig.useSSL === 'true'
     const port = userConfig.port ? parseInt(userConfig.port)
-      : (useSSL ? 443 : 80)
+      : (userConfig.useSSL ? 443 : 80)
 
     const minioClient = new Minio.Client({
       endPoint: userConfig.endPoint,
       port: port,
-      useSSL: useSSL,
+      useSSL: userConfig.useSSL,
       accessKey: userConfig.accessKey,
       secretKey: userConfig.secretKey
     })
@@ -147,7 +145,7 @@ module.exports = (ctx) => {
     }
 
     // 图片基本url拼接
-    let realImgUrlPre = useSSL ? 'https://' : 'http://'
+    let realImgUrlPre = userConfig.useSSL ? 'https://' : 'http://'
     realImgUrlPre += userConfig.endPoint + ':' + port
     realImgUrlPre += '/' + userConfig.bucket + '/'
 
@@ -178,10 +176,10 @@ module.exports = (ctx) => {
       },
       {
         name: 'useSSL',
-        type: 'input',
-        default: userConfig.useSSL,
+        type: 'confirm',
+        default: userConfig.useSSL || false,
         required: true,
-        message: 'true',
+        message: 'useSSL',
         alias: 'useSSL'
       },
       {
@@ -210,10 +208,10 @@ module.exports = (ctx) => {
       },
       {
         name: 'isFilterSameNameImage',
-        type: 'input',
-        default: userConfig.isFilterSameNameImage,
+        type: 'confirm',
+        default: userConfig.isFilterSameNameImage || false,
         required: false,
-        message: '默认: true, 如不使用该功能请设置为false',
+        message: '跳过同名图片',
         alias: '跳过同名图片'
       },
       {
