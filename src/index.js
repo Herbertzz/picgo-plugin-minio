@@ -49,9 +49,11 @@ module.exports = (ctx) => {
       if (config.directory) {
         if ([...config.directory].pop() !== '/') {
           path = config.directory + '/'
+        } else {
+          path = config.directory
         }
-        path = config.directory
       }
+      // ctx.log.error(path)
 
       // 是否自动归到当前日期
       if (config.isFilingDate) {
