@@ -209,7 +209,7 @@ module.exports = (ctx) => {
       {
         name: 'isFilterSameNameImage',
         type: 'confirm',
-        default: userConfig.isFilterSameNameImage || false,
+        default: userConfig.isFilterSameNameImage || true,
         required: false,
         message: '跳过同名图片',
         alias: '跳过同名图片'
