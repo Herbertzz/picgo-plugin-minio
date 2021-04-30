@@ -14,17 +14,14 @@ module.exports = (ctx) => {
     ctx.on('remove', async files => {
       try {
         const { minioClient, config } = await initMinioClient(ctx)
-        // 获取基础存放目录路径
-        const directory = baseDir(config)
 
         for (let i = 0, len = files.length; i < len; i++) {
           let file = files[i]
           if (file.type === 'minio') {
-            const filepath = directory + file.fileName
             // 检查文件是否存在，不存在则会抛出NotFound异常
-            await minioClient.statObject(config.bucket, filepath)
+            await minioClient.statObject(config.bucket, file.fileName)
             // 删除文件
-            await minioClient.removeObject(config.bucket, filepath)
+            await minioClient.removeObject(config.bucket, file.fileName)
           }
         }
       } catch (err) {
@@ -47,14 +44,26 @@ module.exports = (ctx) => {
   const handle = async function (ctx) {
     try {
       const { minioClient, config, realImgUrlPre } = await initMinioClient(ctx)
-      // 获取基础存放目录路径
-      const  directory = baseDir(config)
+      // 存放目录配置
+      let path = ''
+      if (config.directory) {
+        if ([...config.directory].pop() !== '/') {
+          path = config.directory + '/'
+        } else {
+          path = config.directory
+        }
+      }
+      // ctx.log.error(path)
+
+      // 是否自动归到当前日期
+      if (config.isFilingDate) {
+        path += (new Date()).toLocaleDateString() + '/'
+      }
 
       // 上传图片
       let imgList = ctx.output
-      let isFilterSameNameImage = config.isFilterSameNameImage !== 'false'
       for (let i = 0, len = imgList.length; i < len; i++) {
-        if (isFilterSameNameImage) {
+        if (config.isFilterSameNameImage) {
           try {
             // 检查文件是否存在，不存在则会抛出NotFound异常
             await minioClient.statObject(config.bucket, imgList[i].fileName)
@@ -77,15 +86,16 @@ module.exports = (ctx) => {
         let metaData = {
           'Content-Type': imageMime[ext] ? imageMime[ext] : 'application/octet-stream'
         }
-        let file = directory + imgList[i].fileName
+        let file = path + imgList[i].fileName
         await minioClient.putObject(config.bucket, file, image, image.length, metaData)
 
         delete imgList[i].base64Image
         delete imgList[i].buffer
         imgList[i]['imgUrl'] = realImgUrlPre + file
+        imgList[i]['fileName'] = file
       }
 
-      if (isFilterSameNameImage) {
+      if (config.isFilterSameNameImage) {
         // 清除数组中的空值
         let len = imgList.length
         imgList = imgList.filter(e => e)
@@ -109,17 +119,6 @@ module.exports = (ctx) => {
     }
   }
 
-  // 存放目录配置
-  const baseDir = (config) => {
-    if (config.directory) {
-      if ([...config.directory].pop() !== '/') {
-        return config.directory + '/'
-      }
-      return config.directory
-    }
-    return ''
-  }
-
   // 初始化minio客户端
   const initMinioClient = async (ctx) => {
     let userConfig = ctx.getConfig('picBed.minio')
@@ -127,14 +126,13 @@ module.exports = (ctx) => {
       throw 'MinIO图床设置不存在[401]'
     }
 
-    const useSSL = userConfig.useSSL === 'true'
     const port = userConfig.port ? parseInt(userConfig.port)
-      : (useSSL ? 443 : 80)
+      : (userConfig.useSSL ? 443 : 80)
 
     const minioClient = new Minio.Client({
       endPoint: userConfig.endPoint,
       port: port,
-      useSSL: useSSL,
+      useSSL: userConfig.useSSL,
       accessKey: userConfig.accessKey,
       secretKey: userConfig.secretKey
     })
@@ -147,7 +145,7 @@ module.exports = (ctx) => {
     }
 
     // 图片基本url拼接
-    let realImgUrlPre = useSSL ? 'https://' : 'http://'
+    let realImgUrlPre = userConfig.useSSL ? 'https://' : 'http://'
     realImgUrlPre += userConfig.endPoint + ':' + port
     realImgUrlPre += '/' + userConfig.bucket + '/'
 
@@ -178,10 +176,10 @@ module.exports = (ctx) => {
       },
       {
         name: 'useSSL',
-        type: 'input',
-        default: userConfig.useSSL,
+        type: 'confirm',
+        default: userConfig.useSSL || false,
         required: true,
-        message: 'true',
+        message: 'useSSL',
         alias: 'useSSL'
       },
       {
@@ -210,19 +208,27 @@ module.exports = (ctx) => {
       },
       {
         name: 'isFilterSameNameImage',
-        type: 'input',
-        default: userConfig.isFilterSameNameImage,
+        type: 'confirm',
+        default: userConfig.isFilterSameNameImage || false,
         required: false,
-        message: '默认: true, 如不使用该功能请设置为false',
+        message: '跳过同名图片',
         alias: '跳过同名图片'
       },
       {
         name: 'directory',
         type: 'input',
-        default: userConfig.directory,
+        default: userConfig.directory || '',
         required: false,
         message: '存放目录',
         alias: '存放目录'
+      },
+      {
+        name: 'isFilingDate',
+        type: 'confirm',
+        default: userConfig.isFilingDate || false,
+        required: false,
+        message: '自动归到当前日期',
+        alias: '自动归到当前日期'
       }
     ]
   }
