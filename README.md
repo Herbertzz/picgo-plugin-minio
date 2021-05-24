@@ -1,4 +1,8 @@
 # picgo-plugin-minio
+
+![](https://img.shields.io/npm/l/picgo-plugin-minio)
+![](https://img.shields.io/npm/dt/picgo-plugin-minio)
+
 适用于MinIO的PicGo上传器
 
 [English document](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/README_CN.md)

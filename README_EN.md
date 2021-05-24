@@ -1,5 +1,8 @@
 # picgo-plugin-minio
 
+![](https://img.shields.io/npm/l/picgo-plugin-minio)
+![](https://img.shields.io/npm/dt/picgo-plugin-minio)
+
 PicGo Uploader For MinIO
 
 [中文说明](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/README.md)
