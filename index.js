@@ -63,12 +63,15 @@ module.exports = (ctx) => {
       // 上传图片
       let imgList = ctx.output
       for (let i = 0, len = imgList.length; i < len; i++) {
-        if (config.isFilterSameNameImage) {
+        if (config.isFilterSameNameImage == '跳过') {
           try {
             // 检查文件是否存在，不存在则会抛出NotFound异常
-            await minioClient.statObject(config.bucket, imgList[i].fileName)
+            minioClient.statObject(config.bucket, imgList[i].fileName)
+            ctx.log.info('存在同名文件:' + imgList[i].fileName)
             // 存在文件，则删除该文件
             delete imgList[i]
+
+            // 进入下一次循环
             continue
           } catch (err) {
             if (err.code !== 'NotFound') {
@@ -87,6 +90,11 @@ module.exports = (ctx) => {
           'Content-Type': imageMime[ext] ? imageMime[ext] : 'application/octet-stream'
         }
         let file = path + imgList[i].fileName
+
+        if (config.isFilterSameNameImage == '保留两者') {
+          file = path + new Date().getTime() + "" + (Math.random() * 100000 | 1) + "." + ext
+        }
+
         await minioClient.putObject(config.bucket, file, image, image.length, metaData)
 
         delete imgList[i].base64Image
@@ -95,7 +103,7 @@ module.exports = (ctx) => {
         imgList[i]['fileName'] = file
       }
 
-      if (config.isFilterSameNameImage) {
+      if (config.isFilterSameNameImage == '跳过') {
         // 清除数组中的空值
         let len = imgList.length
         imgList = imgList.filter(e => e)
@@ -147,6 +155,12 @@ module.exports = (ctx) => {
     // 图片基本url拼接
     let realImgUrlPre = userConfig.useSSL ? 'https://' : 'http://'
     realImgUrlPre += userConfig.endPoint + ':' + port
+
+    // 使用用户自定义域名
+    if (userConfig.userDomain.length > 0 && userConfig.userDomain.indexOf("http") >= 0) {
+      realImgUrlPre = userConfig.userDomain
+    }
+
     realImgUrlPre += '/' + userConfig.bucket + '/'
 
     return { minioClient, config: userConfig, realImgUrlPre }
@@ -208,11 +222,12 @@ module.exports = (ctx) => {
       },
       {
         name: 'isFilterSameNameImage',
-        type: 'confirm',
-        default: userConfig.isFilterSameNameImage || true,
+        type: 'list',
+        choices: ['跳过', '覆盖', '保留两者'],
+        default: userConfig.isFilterSameNameImage || '跳过',
         required: false,
-        message: '跳过同名图片',
-        alias: '跳过同名图片'
+        message: '同名文件',
+        alias: '同名文件'
       },
       {
         name: 'directory',
@@ -221,6 +236,14 @@ module.exports = (ctx) => {
         required: false,
         message: '存放目录',
         alias: '存放目录'
+      },
+      {
+        name: 'userDomain',
+        type: 'input',
+        default: userConfig.userDomain || '',
+        required: false,
+        message: '如:https://img.host.com',
+        alias: '设定自定义域名'
       },
       {
         name: 'isFilingDate',
