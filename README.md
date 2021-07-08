@@ -5,8 +5,6 @@
 
 适用于MinIO的PicGo上传器
 
-[English document](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/README_CN.md)
-
 ### 功能
 * 支持上传
 * 支持相册删除功能
@@ -14,6 +12,10 @@
 * 支持跳过同名文件功能可配置(2.1.0+)
 * 支持多级目录功能(2.2.0+)
 * 将图片归档到当前日期目录功能(2.2.0+)
+* 同名文件支持 `跳过`、`覆盖`、`保留两者` 三种操作(2.3.0+)
+  * `覆盖` 有点小问题：GUI 的相册会同时出现新旧两张一样的图片
+  * PicGO 2.3.0 可能提供了相册相关 API，等正式版出来，再看看是否可以解决该问题
+* 自定义域名(2.3.0+)
 
 ### 安装
 ```bash
@@ -27,9 +29,13 @@ npm i picgo-plugin-minio
 * `accessKey`	    Access key是唯一标识你的账户的用户ID。
 * `secretKey`	    Secret key是你账户的密码。
 * `bucket`          存储文件的桶名。
-* `跳过同名图片`      yes开启时，会检查图床是否存在同名的文件，存在则跳过该文件的上传；默认: yes, 不使用请设为no。(2.1.0+)
 * `存放目录`         将图片上传指定目录下, 例如 `dir`、 `dir1/dir2`(2.2.0+)
 * `自动归到当前日期`  yes表示开启，把上传的图片归档到当前日期目录下(2.2.0+)
+* `同名文件`         默认: `跳过`(2.3.0+)
+  * `跳过` 检查 minio 中是否存在同名的文件，存在则跳过该文件的上传
+  * `覆盖` 不进行检查，直接上传
+  * `保留两者` 检查 minio 中是否存在同名的文件，存在则重命名该文件名再上传（规则：原文件名_repeat_时间戳_随机数.扩展名）
+* `自定义域名`       简单的替换 `endPoint` 的域名(2.3.0+)
   
 ![Demo](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/static/demo.jpg?raw=true)
 
