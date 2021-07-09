@@ -12,12 +12,12 @@ module.exports = ctx => {
     ctx.on('remove', async files => {
       try {
         const config = helper.getConfig(ctx)
-        const minioClient = await helper.initMinioClient(config)
+        await helper.initMinioClient(config)
 
         for (let i = 0, len = files.length; i < len; i++) {
           let file = files[i]
-          if (file.type === 'minio' && await helper.isFileExistInMinio(minioClient, config.bucket, file.fileName)) {
-            await helper.deleteFileInMinio(minioClient, config.bucket, file.fileName)
+          if (file.type === 'minio' && await helper.isFileExistInMinio(file.fileName)) {
+            await helper.deleteFileInMinio(file.fileName)
           }
         }
       } catch (err) {
@@ -33,7 +33,7 @@ module.exports = ctx => {
   const handle = async function (ctx) {
     try {
       const config = helper.getConfig(ctx)
-      const minioClient = await helper.initMinioClient(config)
+      await helper.initMinioClient(config)
 
       /**
        * 获取要上传的图片列表
@@ -77,7 +77,7 @@ module.exports = ctx => {
         case '跳过':
         default: // 默认：跳过
           for (let i = 0; i < len; i++) {
-            if (await helper.isFileExistInMinio(minioClient, config.bucket, imgList[i].fileName)) {
+            if (await helper.isFileExistInMinio(imgList[i].fileName)) {
               delete imgList[i]
             }
           }
@@ -103,7 +103,7 @@ module.exports = ctx => {
           image = Buffer.from(imgList[i].base64Image, 'base64')
         }
 
-        await helper.uploadFileToMinio(minioClient, config.bucket, imgList[i].fileName, image, ext)
+        await helper.uploadFileToMinio(imgList[i].fileName, image, ext)
 
         delete imgList[i].base64Image
         delete imgList[i].buffer
@@ -111,7 +111,7 @@ module.exports = ctx => {
 
       ctx.output = imgList
     } catch (err) {
-      ctx.log.warn(JSON.stringify(err))
+      ctx.log.warn(err)
       ctx.emit('notification', {
         title: '上传失败',
         body: JSON.stringify(err)

@@ -8,6 +8,12 @@ const imageMime = {
   ico: 'image/x-icon',
   webp: 'image/webp'
 }
+let minioClient, bucket
+
+// 检查 Minio Client 是否已初始化
+function checkMinioInited() {
+  return minioClient && bucket
+}
 
 module.exports = {
   // 生成基础URL
@@ -55,7 +61,7 @@ module.exports = {
 
   // 初始化 minio 客户端
   async initMinioClient (config) {
-    const minioClient = new Minio.Client({
+    minioClient = new Minio.Client({
       endPoint: config.endPoint,
       port: parseInt(config.port),
       useSSL: config.useSSL,
@@ -69,12 +75,13 @@ module.exports = {
       // 则创建该bucket(暂不实现该功能)
       // await minioClient.makeBucket(config.bucket, 'us-east-1')
     }
-
-    return minioClient
+    bucket = config.bucket
   },
 
   // 在 minio 中检查是否存在该文件
-  async isFileExistInMinio (minioClient, bucket, filename) {
+  async isFileExistInMinio (filename) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     try {
       // 检查文件是否存在，不存在则会抛出NotFound异常
       await minioClient.statObject(bucket, filename)
@@ -88,7 +95,9 @@ module.exports = {
   },
 
   // 在 minio 中删除文件
-  async deleteFileInMinio (minioClient, bucket, filename) {
+  async deleteFileInMinio (filename) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     try {
       await minioClient.removeObject(bucket, filename)
     } catch (err) {
@@ -97,7 +106,9 @@ module.exports = {
   },
 
   // 上传文件到 minio
-  async uploadFileToMinio (minioClient, bucket, path, file, extname) {
+  async uploadFileToMinio (path, file, extname) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     const metaData = {
       'Content-Type': imageMime[extname] ? imageMime[extname] : 'application/octet-stream'
     }
