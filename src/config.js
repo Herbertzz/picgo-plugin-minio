@@ -6,10 +6,10 @@
  * @property {string} config.accessKey
  * @property {string} config.secretKey
  * @property {string} config.bucket
- * @property {string} config.isFilterSameNameImage
- * @property {string} config.directory
- * @property {string} config.customDomain
- * @property {boolean} config.isFilingDate
+ * @property {string} config.sameNameFileProcessingMode   同名文件
+ * @property {string} config.baseDir                      基础目录
+ * @property {string} config.customDomain                 自定义域名
+ * @property {boolean} config.isAutoArchive               自动归档
  */
 module.exports = ctx => {
   let userConfig = ctx.getConfig('picBed.minio')
@@ -66,21 +66,21 @@ module.exports = ctx => {
       alias: 'bucket'
     },
     {
-      name: 'isFilterSameNameImage',
+      name: 'sameNameFileProcessingMode',
       type: 'list',
       choices: ['跳过', '覆盖', '保留两者'],
-      default: userConfig.isFilterSameNameImage || '跳过',
+      default: userConfig.sameNameFileProcessingMode || '跳过',
       required: false,
       message: '同名文件',
       alias: '同名文件'
     },
     {
-      name: 'directory',
+      name: 'baseDir',
       type: 'input',
-      default: userConfig.directory || '',
+      default: userConfig.baseDir || '',
       required: false,
-      message: '存放目录',
-      alias: '存放目录'
+      message: '存放文件的基础目录',
+      alias: '基础目录'
     },
     {
       name: 'customDomain',
@@ -91,12 +91,12 @@ module.exports = ctx => {
       alias: '自定义域名'
     },
     {
-      name: 'isFilingDate',
+      name: 'isAutoArchive',
       type: 'confirm',
-      default: userConfig.isFilingDate || false,
+      default: userConfig.isAutoArchive || false,
       required: false,
-      message: '自动归到当前日期',
-      alias: '自动归到当前日期'
+      message: '将上传文件存放到当天日期的目录下',
+      alias: '自动归档'
     }
   ]
 }
