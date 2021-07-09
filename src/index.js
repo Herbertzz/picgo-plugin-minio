@@ -48,20 +48,34 @@ module.exports = ctx => {
       let imgList = ctx.output
       const len = imgList.length
 
-      let realImgUrlPre = helper.genRealImgUrlPre(config) // 基础的url
-      let path = ''
-      path += helper.genBasePath(config.directory) // 存放目录配置
-      path += helper.genDatePath(config.isFilingDate) // 是否自动归到当前日期
+      let baseURL = helper.genBaseURL(config) // 基础地址
+      let path = helper.genBasePath(config.baseDir) // 基础目录配置
+      path += helper.genDatePath(config.isAutoArchive) // 是否自动归档
       for (let i = 0; i < len; i++) {
         let file = `${path}${imgList[i].fileName}`
 
-        imgList[i]['imgUrl'] = realImgUrlPre + file
+        imgList[i]['imgUrl'] = baseURL + file
         imgList[i]['fileName'] = file
       }
 
       // 同名文件处理
-      switch (config.isFilterSameNameImage) {
+      switch (config.sameNameFileProcessingMode) {
+        case '覆盖':
+          break
+        case '保留两者':
+          for (let i = 0; i < len; i++) {
+            let ext = imgList[i].extname
+            let filename = imgList[i].fileName.replace(ext, '')
+            let timestamp = new Date().getTime().toString() + '_'
+            let random = Math.random().toString().slice(-6)
+            let file = `${filename}_repeat_${timestamp}_${random}${ext}`
+
+            imgList[i]['imgUrl'] = baseURL + file
+            imgList[i]['fileName'] = file
+          }
+          break
         case '跳过':
+        default: // 默认：跳过
           for (let i = 0; i < len; i++) {
             if (await helper.isFileExistInMinio(minioClient, config.bucket, imgList[i].fileName)) {
               delete imgList[i]
@@ -75,24 +89,10 @@ module.exports = ctx => {
             let msg = `存在${s}个同名文件(处理方式: 跳过)`
             // ctx.log.warn(msg)
             ctx.emit('notification', {
-              title: '上传异常',
+              title: '上传提示',
               body: msg
             })
           }
-          break
-        case '保留两者':
-          let ext, filename, timestamp, random, file
-          for (let i = 0; i < len; i++) {
-            ext = imgList[i].extname
-            filename = imgList[i].fileName.replace(ext, '')
-            timestamp = new Date().getTime().toString() + '_'
-            random = Math.random().toString().slice(-6)
-            file = `${filename}_repeat_${timestamp}_${random}${ext}`
-
-            imgList[i]['imgUrl'] = realImgUrlPre + file
-            imgList[i]['fileName'] = file
-          }
-          break
       }
 
       // 上传图片
@@ -113,7 +113,7 @@ module.exports = ctx => {
     } catch (err) {
       ctx.log.warn(JSON.stringify(err))
       ctx.emit('notification', {
-        title: '上传失败1',
+        title: '上传失败',
         body: JSON.stringify(err)
       })
     }

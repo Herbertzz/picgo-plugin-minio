@@ -18,9 +18,9 @@
 * 自定义域名(2.3.0+)
 
 ### 安装
-```bash
-npm i picgo-plugin-minio
-```
+在插件界面的搜索栏搜索 `minio` (PicGo 的插件名以 `picgo-plugin-` 为前缀，所以只需搜前缀后的名字即可)
+
+搜到了插件之后只要点击右下角的安装即可。
 
 ### 使用
 * `endPoint`	    对象存储服务的URL
@@ -28,16 +28,14 @@ npm i picgo-plugin-minio
 * `useSSL`	        yes代表使用HTTPS
 * `accessKey`	    Access key是唯一标识你的账户的用户ID。
 * `secretKey`	    Secret key是你账户的密码。
-* `bucket`          存储文件的桶名。
+* `bucket`          存储文件的桶。
 * `存放目录`         将图片上传指定目录下, 例如 `dir`、 `dir1/dir2`(2.2.0+)
-* `自动归到当前日期`  yes表示开启，把上传的图片归档到当前日期目录下(2.2.0+)
+* `自动归档`         yes表示开启，把上传的图片归档到当天日期目录下(2.2.0+)
 * `同名文件`         默认: `跳过`(2.3.0+)
   * `跳过` 检查 minio 中是否存在同名的文件，存在则跳过该文件的上传
   * `覆盖` 不进行检查，直接上传
   * `保留两者` 检查 minio 中是否存在同名的文件，存在则重命名该文件名再上传（规则：原文件名_repeat_时间戳_随机数.扩展名）
 * `自定义域名`       简单的替换 `endPoint` 的域名(2.3.0+)
-  
-![Demo](https://github.com/Herbertzz/picgo-plugin-minio/blob/master/static/demo.jpg?raw=true)
 
 ### Q&A
 * Q: MinIO 无法公开访问？
