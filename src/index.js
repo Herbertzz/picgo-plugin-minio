@@ -12,12 +12,12 @@ module.exports = ctx => {
     ctx.on('remove', async files => {
       try {
         const config = helper.getConfig(ctx)
-        const minioClient = await helper.initMinioClient(config)
+        await helper.initMinioClient(config)
 
         for (let i = 0, len = files.length; i < len; i++) {
           let file = files[i]
-          if (file.type === 'minio' && await helper.isFileExistInMinio(minioClient, config.bucket, file.fileName)) {
-            await helper.deleteFileInMinio(minioClient, config.bucket, file.fileName)
+          if (file.type === 'minio' && await helper.isFileExistInMinio(file.fileName)) {
+            await helper.deleteFileInMinio(file.fileName)
           }
         }
       } catch (err) {
@@ -33,7 +33,7 @@ module.exports = ctx => {
   const handle = async function (ctx) {
     try {
       const config = helper.getConfig(ctx)
-      const minioClient = await helper.initMinioClient(config)
+      await helper.initMinioClient(config)
 
       /**
        * 获取要上传的图片列表
@@ -48,22 +48,36 @@ module.exports = ctx => {
       let imgList = ctx.output
       const len = imgList.length
 
-      let realImgUrlPre = helper.genRealImgUrlPre(config) // 基础的url
-      let path = ''
-      path += helper.genBasePath(config.directory) // 存放目录配置
-      path += helper.genDatePath(config.isFilingDate) // 是否自动归到当前日期
+      let baseURL = helper.genBaseURL(config) // 基础地址
+      let path = helper.genBasePath(config.baseDir) // 基础目录配置
+      path += helper.genDatePath(config.isAutoArchive) // 是否自动归档
       for (let i = 0; i < len; i++) {
         let file = `${path}${imgList[i].fileName}`
 
-        imgList[i]['imgUrl'] = realImgUrlPre + file
+        imgList[i]['imgUrl'] = baseURL + file
         imgList[i]['fileName'] = file
       }
 
       // 同名文件处理
-      switch (config.isFilterSameNameImage) {
-        case '跳过':
+      switch (config.sameNameFileProcessingMode) {
+        case '覆盖':
+          break
+        case '保留两者':
           for (let i = 0; i < len; i++) {
-            if (await helper.isFileExistInMinio(minioClient, config.bucket, imgList[i].fileName)) {
+            let ext = imgList[i].extname
+            let filename = imgList[i].fileName.replace(ext, '')
+            let timestamp = new Date().getTime().toString() + '_'
+            let random = Math.random().toString().slice(-6)
+            let file = `${filename}_repeat_${timestamp}_${random}${ext}`
+
+            imgList[i]['imgUrl'] = baseURL + file
+            imgList[i]['fileName'] = file
+          }
+          break
+        case '跳过':
+        default: // 默认：跳过
+          for (let i = 0; i < len; i++) {
+            if (await helper.isFileExistInMinio(imgList[i].fileName)) {
               delete imgList[i]
             }
           }
@@ -75,24 +89,10 @@ module.exports = ctx => {
             let msg = `存在${s}个同名文件(处理方式: 跳过)`
             // ctx.log.warn(msg)
             ctx.emit('notification', {
-              title: '上传异常',
+              title: '上传提示',
               body: msg
             })
           }
-          break
-        case '保留两者':
-          let ext, filename, timestamp, random, file
-          for (let i = 0; i < len; i++) {
-            ext = imgList[i].extname
-            filename = imgList[i].fileName.replace(ext, '')
-            timestamp = new Date().getTime().toString() + '_'
-            random = Math.random().toString().slice(-6)
-            file = `${filename}_repeat_${timestamp}_${random}${ext}`
-
-            imgList[i]['imgUrl'] = realImgUrlPre + file
-            imgList[i]['fileName'] = file
-          }
-          break
       }
 
       // 上传图片
@@ -103,7 +103,7 @@ module.exports = ctx => {
           image = Buffer.from(imgList[i].base64Image, 'base64')
         }
 
-        await helper.uploadFileToMinio(minioClient, config.bucket, imgList[i].fileName, image, ext)
+        await helper.uploadFileToMinio(imgList[i].fileName, image, ext)
 
         delete imgList[i].base64Image
         delete imgList[i].buffer
@@ -111,9 +111,9 @@ module.exports = ctx => {
 
       ctx.output = imgList
     } catch (err) {
-      ctx.log.warn(JSON.stringify(err))
+      ctx.log.warn(err)
       ctx.emit('notification', {
-        title: '上传失败1',
+        title: '上传失败',
         body: JSON.stringify(err)
       })
     }

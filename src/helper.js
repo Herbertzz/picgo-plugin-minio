@@ -8,19 +8,43 @@ const imageMime = {
   ico: 'image/x-icon',
   webp: 'image/webp'
 }
+let minioClient, bucket
+
+// 检查 Minio Client 是否已初始化
+function checkMinioInited() {
+  return minioClient && bucket
+}
 
 module.exports = {
-  // 存放目录配置
-  genBasePath (directory) {
-    if (!directory) return ''
+  // 生成基础URL
+  genBaseURL (config) {
+    let protocol = config.useSSL ? 'https' : 'http'
+    let origin = `${protocol}://${config.endPoint}:${config.port}`
 
-    // 判断路径末尾是否为 '/'，不是则加上 '/'
-    return directory + ([...directory].pop() !== '/' ? '/' : '')
+    // 自定义域名
+    if (config.customDomain.length > 0 && config.customDomain.indexOf('http') >= 0) {
+      origin = config.customDomain
+    }
+
+    return `${origin}/${config.bucket}/`
+  },
+
+  // 基础目录配置
+  genBasePath (baseDir) {
+    if (!baseDir) return ''
+
+    let arr = [...baseDir]
+    // 判断路径开头是否为 '/'，是则去除
+    if (arr[0] === '/') baseDir = baseDir.replace('/', '')
+    // 判断路径末尾是否为 '/'，不是则加上
+    if (arr.pop() !== '/') baseDir += '/'
+
+    return baseDir
   },
 
   // 生成日期路径
-  genDatePath (isFilingDate) {
-    if (!isFilingDate) return ''
+  genDatePath (isAutoArchive) {
+    if (!isAutoArchive) return ''
 
     return (new Date()).toLocaleDateString() + '/'
   },
@@ -35,24 +59,9 @@ module.exports = {
     return userConfig
   },
 
-  // 生成基础的上传URL
-  genRealImgUrlPre (config) {
-    // 基础域名拼接
-    let realImgUrlPre = config.useSSL ? 'https://' : 'http://'
-    realImgUrlPre += config.endPoint + ':' + config.port
-
-    // 自定义域名
-    if (config.customDomain.length > 0 && config.customDomain.indexOf('http') >= 0) {
-      realImgUrlPre = config.customDomain
-    }
-
-    realImgUrlPre += '/' + config.bucket + '/'
-    return realImgUrlPre
-  },
-
   // 初始化 minio 客户端
   async initMinioClient (config) {
-    const minioClient = new Minio.Client({
+    minioClient = new Minio.Client({
       endPoint: config.endPoint,
       port: parseInt(config.port),
       useSSL: config.useSSL,
@@ -66,12 +75,13 @@ module.exports = {
       // 则创建该bucket(暂不实现该功能)
       // await minioClient.makeBucket(config.bucket, 'us-east-1')
     }
-
-    return minioClient
+    bucket = config.bucket
   },
 
   // 在 minio 中检查是否存在该文件
-  async isFileExistInMinio (minioClient, bucket, filename) {
+  async isFileExistInMinio (filename) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     try {
       // 检查文件是否存在，不存在则会抛出NotFound异常
       await minioClient.statObject(bucket, filename)
@@ -85,7 +95,9 @@ module.exports = {
   },
 
   // 在 minio 中删除文件
-  async deleteFileInMinio (minioClient, bucket, filename) {
+  async deleteFileInMinio (filename) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     try {
       await minioClient.removeObject(bucket, filename)
     } catch (err) {
@@ -94,7 +106,9 @@ module.exports = {
   },
 
   // 上传文件到 minio
-  async uploadFileToMinio (minioClient, bucket, path, file, extname) {
+  async uploadFileToMinio (path, file, extname) {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
     const metaData = {
       'Content-Type': imageMime[extname] ? imageMime[extname] : 'application/octet-stream'
     }

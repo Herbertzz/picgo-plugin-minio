@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-minio",
-  "version": "2.3.0",
+  "version": "2.3.2",
   "description": "picgo uploader for MinIO",
   "main": "src/index.js",
   "publishConfig": {
@@ -17,7 +17,8 @@
     "picgo",
     "picgo-plugin",
     "picgo-plugin-minio",
-    "picgo-minio"
+    "picgo-minio",
+    "picgo-gui-plugin"
   ],
   "author": "herbertzz",
   "license": "MIT",

@@ -1,10 +1,7 @@
 node_modules/
-yarn-error.log
 temp.js
 package-lock.json
 tsconfig.json
 tslint.json
 .vscode/
 src/
-.travis.yml
-server.conf
