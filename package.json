@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-minio",
-  "version": "2.3.2",
+  "version": "2.3.3",
   "description": "picgo uploader for MinIO",
   "main": "src/index.js",
   "publishConfig": {
