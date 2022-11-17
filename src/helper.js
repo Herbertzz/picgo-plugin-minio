@@ -6,7 +6,8 @@ const imageMime = {
   png: 'image/png',
   bmp: 'image/bmp',
   ico: 'image/x-icon',
-  webp: 'image/webp'
+  webp: 'image/webp',
+  svg: 'image/svg+xml'
 }
 let minioClient, bucket
 
