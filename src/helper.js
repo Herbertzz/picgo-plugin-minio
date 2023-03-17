@@ -1,5 +1,5 @@
 const Minio = require('minio')
-const imageMime = {
+const mimes = {
   gif: 'image/gif',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
@@ -7,7 +7,8 @@ const imageMime = {
   bmp: 'image/bmp',
   ico: 'image/x-icon',
   webp: 'image/webp',
-  svg: 'image/svg+xml'
+  svg: 'image/svg+xml',
+  mp4: 'video/mp4',
 }
 let minioClient, bucket
 
@@ -116,7 +117,7 @@ module.exports = {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
     const metaData = {
-      'Content-Type': imageMime[extname] ? imageMime[extname] : 'application/octet-stream'
+      'Content-Type': mimes[extname] ? mimes[extname] : 'application/octet-stream'
     }
     await minioClient.putObject(bucket, path, file, file.length, metaData)
   }
