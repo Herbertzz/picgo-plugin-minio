@@ -47,12 +47,12 @@ module.exports = {
   // 生成日期路径
   genDatePath (isAutoArchive) {
     if (!isAutoArchive) return ''
-    
+
     const date = new Date()
     const year = date.getFullYear()
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const day = date.getDate().toString().padStart(2, '0')
-    
+
     return `${year}/${month}/${day}/`
   },
 
@@ -116,6 +116,7 @@ module.exports = {
   async uploadFileToMinio (path, file, extname) {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
+    extname = extname.toLowerCase()
     const metaData = {
       'Content-Type': mimes[extname] ? mimes[extname] : 'application/octet-stream'
     }

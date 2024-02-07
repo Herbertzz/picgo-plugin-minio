@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-minio",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "description": "picgo uploader for MinIO",
   "main": "src/index.js",
   "publishConfig": {
@@ -32,6 +32,6 @@
     "@varnxy/logger": "^1.1.2"
   },
   "dependencies": {
-    "minio": "^7.0.18"
+    "minio": "^7.1.3"
   }
 }
