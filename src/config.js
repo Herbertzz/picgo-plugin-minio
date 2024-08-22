@@ -3,6 +3,7 @@
  * @property {string} config.endPoint
  * @property {string} config.port
  * @property {boolean} config.useSSL
+ * @property {boolean} config.allowInsecureCert           允许不安全证书
  * @property {string} config.accessKey
  * @property {string} config.secretKey
  * @property {string} config.bucket
@@ -41,6 +42,14 @@ module.exports = ctx => {
       required: true,
       message: 'useSSL',
       alias: 'useSSL'
+    },
+    {
+      name: 'allowInsecureCert',
+      type: 'confirm',
+      default: userConfig.allowInsecureCert || false,
+      required: false,
+      message: '允许不安全证书',
+      alias: '允许不安全证书'
     },
     {
       name: 'accessKey',

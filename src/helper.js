@@ -76,6 +76,11 @@ module.exports = {
       secretKey: config.secretKey
     })
 
+    // 是否允许不安全的证书
+    if (config.allowInsecureCert) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0
+    }
+
     // 检查bucket是否存在, 不存在则报错
     if (!await minioClient.bucketExists(config.bucket)) {
       throw `未找到 ${config.bucket} Bucket[404]`
