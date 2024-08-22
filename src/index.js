@@ -3,9 +3,9 @@ const helper = require('./helper')
 
 const pluginName = 'minio'
 
-
 const guiMenu = ctx => {
   const guiMenuAlbumRecleanLabel = '相册-清理重复项'
+  const guiMenuPullLabel = '相册-拉取云端数据'
 
   return [
     {
@@ -44,7 +44,52 @@ const guiMenu = ctx => {
 
         ctx.emit('notification', {
           title: guiMenuAlbumRecleanLabel,
-          body: `删除 ${removeIds.length} 个`
+          body: `删除 ${removeIds.length} 项`
+        })
+      }
+    },
+    {
+      label: guiMenuPullLabel,
+      async handle (ctx, guiApi) {
+        const config = helper.getConfig(ctx)
+        await helper.initMinioClient(config)
+
+        // 获取云端数据
+        const objects = await helper.getListObjectsOfMinio()
+
+        // 获取相册数据
+        const result = await guiApi.galleryDB.get()
+        const albums = result.data.filter(item => item.type === pluginName)
+
+        // 对比数据，去掉相册已存在的项
+        const baseURL = helper.genBaseURL(config) // 基础地址
+        const addData = objects
+          .map(object => {
+            if (!albums.some(item => item.imgUrl.endsWith(object.name))) {
+              return {
+                type: pluginName,
+                imgUrl: `${baseURL}${object.name}`,
+                createdAt: Date.parse(object.lastModified),
+                updatedAt: Date.parse(object.lastModified)
+              }
+            }
+            return undefined
+          })
+          .filter(Boolean)
+
+        if (addData.length === 0) {
+          ctx.emit('notification', {
+            title: guiMenuPullLabel,
+            body: '没有新增项'
+          })
+          return
+        }
+
+        await guiApi.galleryDB.insertMany(addData)
+
+        ctx.emit('notification', {
+          title: guiMenuAlbumRecleanLabel,
+          body: `新增 ${addData.length} 项`
         })
       }
     }

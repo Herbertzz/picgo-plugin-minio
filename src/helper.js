@@ -124,6 +124,20 @@ module.exports = {
     await minioClient.putObject(bucket, path, file, file.length, metaData)
   },
 
+  // 获取minio中的文件列表
+  async getListObjectsOfMinio () {
+    if (!checkMinioInited()) throw 'Minio Client 未初始化'
+
+    const objects = []
+    const stream = minioClient.listObjects(bucket, '', true)
+
+    for await (const obj of stream) {
+      objects.push(obj)
+    }
+
+    return objects
+  },
+
   // 合并 内置MIME 和 自定义MIME
   mergeMimes (config) {
     if (!config.customMimes) {
