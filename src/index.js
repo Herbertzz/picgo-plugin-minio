@@ -95,6 +95,9 @@ module.exports = ctx => {
           }
       }
 
+      // 获取合并后mimes
+      const allMimes = helper.mergeMimes(config)
+
       // 上传图片
       for (let i = 0, len = imgList.length; i < len; i++) {
         let ext = imgList[i].extname.replace('.', '')
@@ -103,7 +106,11 @@ module.exports = ctx => {
           image = Buffer.from(imgList[i].base64Image, 'base64')
         }
 
-        await helper.uploadFileToMinio(imgList[i].fileName, image, ext)
+        ext = ext.toLowerCase()
+        const metaData = {
+          'Content-Type': allMimes[ext] ? allMimes[ext] : 'application/octet-stream'
+        }
+        await helper.uploadFileToMinio(imgList[i].fileName, image, metaData)
 
         delete imgList[i].base64Image
         delete imgList[i].buffer

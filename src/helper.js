@@ -113,13 +113,25 @@ module.exports = {
   },
 
   // 上传文件到 minio
-  async uploadFileToMinio (path, file, extname) {
+  async uploadFileToMinio (path, file, metaData) {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
-    extname = extname.toLowerCase()
-    const metaData = {
-      'Content-Type': mimes[extname] ? mimes[extname] : 'application/octet-stream'
-    }
     await minioClient.putObject(bucket, path, file, file.length, metaData)
+  },
+
+  // 合并 内置MIME 和 自定义MIME
+  mergeMimes (config) {
+    if (!config.customMimes) {
+      return mimes
+    }
+
+    let data = { ...mimes }
+    config.customMimes.split('|').forEach(item => {
+      const [ext, mime] = item.split(':')
+      if (ext && mime) {
+        data[ext.toLowerCase()] = mime
+      }
+    })
+    return data
   }
 }

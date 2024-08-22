@@ -10,6 +10,7 @@
  * @property {string} config.baseDir                      基础目录
  * @property {string} config.customDomain                 自定义域名
  * @property {boolean} config.isAutoArchive               自动归档
+ * @property {string} config.customMimes                  自定义MIME
  */
 module.exports = ctx => {
   let userConfig = ctx.getConfig('picBed.minio')
@@ -97,6 +98,14 @@ module.exports = ctx => {
       required: false,
       message: '将上传文件存放到当天日期的目录下',
       alias: '自动归档'
+    },
+    {
+      name: 'customMimes',
+      type: 'input',
+      default: userConfig.customMimes || '',
+      required: false,
+      message: '格式：ext1:mime1|ext2:mime2|ext3:mime3',
+      alias: '自定义 MIME'
     }
   ]
 }
