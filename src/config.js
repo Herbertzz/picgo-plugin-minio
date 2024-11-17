@@ -10,6 +10,7 @@
  * @property {string} config.sameNameFileProcessingMode   同名文件
  * @property {string} config.baseDir                      基础目录
  * @property {string} config.customDomain                 自定义域名
+ * @property {string} config.pathFormat                   路径拼接方式
  * @property {boolean} config.isAutoArchive               自动归档
  * @property {string} config.customMimes                  自定义MIME
  */
@@ -99,6 +100,14 @@ module.exports = ctx => {
       required: false,
       message: '如:https://img.host.com',
       alias: '自定义域名'
+    },
+    {
+      name: 'pathFormat',
+      type: 'input',
+      default: userConfig.pathFormat || '',
+      required: false,
+      message: '默认为 {bucket}/{key}',
+      alias: '路径拼接方式'
     },
     {
       name: 'isAutoArchive',
