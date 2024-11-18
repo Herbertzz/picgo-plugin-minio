@@ -19,7 +19,7 @@ function checkMinioInited() {
 
 module.exports = {
   // 生成基础URL
-  genBaseURL (config) {
+  genBaseURL(config) {
     let protocol = config.useSSL ? 'https' : 'http'
     let origin = `${protocol}://${config.endPoint}:${config.port}`
 
@@ -28,11 +28,22 @@ module.exports = {
       origin = config.customDomain
     }
 
+    if (config.pathFormat.length > 0) {
+      const customPath = config.pathFormat.replace('{bucket}', config.bucket).replace('{key}', '')
+      if (customPath.length === 0) {
+        return `${origin}/`
+      } else if (customPath.endsWith('/')) {
+        return `${origin}/${customPath}`
+      } else {
+        return `${origin}/${customPath}/`
+      }
+    }
+
     return `${origin}/${config.bucket}/`
   },
 
   // 基础目录配置
-  genBasePath (baseDir) {
+  genBasePath(baseDir) {
     if (!baseDir) return ''
 
     let arr = [...baseDir]
@@ -45,7 +56,7 @@ module.exports = {
   },
 
   // 生成日期路径
-  genDatePath (isAutoArchive) {
+  genDatePath(isAutoArchive) {
     if (!isAutoArchive) return ''
 
     const date = new Date()
@@ -57,7 +68,7 @@ module.exports = {
   },
 
   // 获取配置信息
-  getConfig (ctx) {
+  getConfig(ctx) {
     let userConfig = ctx.getConfig('picBed.minio')
     if (!userConfig) {
       throw 'MinIO图床设置不存在[401]'
@@ -67,7 +78,7 @@ module.exports = {
   },
 
   // 初始化 minio 客户端
-  async initMinioClient (config) {
+  async initMinioClient(config) {
     minioClient = new Minio.Client({
       endPoint: config.endPoint,
       port: parseInt(config.port),
@@ -91,7 +102,7 @@ module.exports = {
   },
 
   // 在 minio 中检查是否存在该文件
-  async isFileExistInMinio (filename) {
+  async isFileExistInMinio(filename) {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
     try {
@@ -107,7 +118,7 @@ module.exports = {
   },
 
   // 在 minio 中删除文件
-  async deleteFileInMinio (filename) {
+  async deleteFileInMinio(filename) {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
     try {
@@ -118,14 +129,14 @@ module.exports = {
   },
 
   // 上传文件到 minio
-  async uploadFileToMinio (path, file, metaData) {
+  async uploadFileToMinio(path, file, metaData) {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
     await minioClient.putObject(bucket, path, file, file.length, metaData)
   },
 
   // 获取minio中的文件列表
-  async getListObjectsOfMinio () {
+  async getListObjectsOfMinio() {
     if (!checkMinioInited()) throw 'Minio Client 未初始化'
 
     const objects = []
@@ -139,7 +150,7 @@ module.exports = {
   },
 
   // 合并 内置MIME 和 自定义MIME
-  mergeMimes (config) {
+  mergeMimes(config) {
     if (!config.customMimes) {
       return mimes
     }
