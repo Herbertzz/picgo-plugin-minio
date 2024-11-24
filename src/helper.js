@@ -84,7 +84,8 @@ module.exports = {
       port: parseInt(config.port),
       useSSL: config.useSSL,
       accessKey: config.accessKey,
-      secretKey: config.secretKey
+      secretKey: config.secretKey,
+      ifAutoRename: config.ifAutoRename
     })
 
     // 是否允许不安全的证书
