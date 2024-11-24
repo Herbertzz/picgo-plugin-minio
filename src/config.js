@@ -8,6 +8,7 @@
  * @property {string} config.secretKey
  * @property {string} config.bucket
  * @property {string} config.sameNameFileProcessingMode   同名文件
+ * @property {string} config.ifAutoRename                 自动重命名
  * @property {string} config.baseDir                      基础目录
  * @property {string} config.customDomain                 自定义域名
  * @property {string} config.pathFormat                   路径拼接方式
@@ -79,11 +80,19 @@ module.exports = ctx => {
     {
       name: 'sameNameFileProcessingMode',
       type: 'list',
-      choices: ['跳过', '覆盖', '保留两者'],
+      choices: ['跳过', '覆盖'],
       default: userConfig.sameNameFileProcessingMode || '跳过',
       required: false,
       message: '同名文件',
       alias: '同名文件'
+    },
+    {
+      name: 'ifAutoRename',
+      type: 'confirm',
+      default: userConfig.ifAutoRename || true,
+      required: true,
+      message: '开启自动重命名',
+      alias: '开启自动重命名'
     },
     {
       name: 'baseDir',

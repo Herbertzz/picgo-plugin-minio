@@ -118,7 +118,16 @@ const handle = async (ctx) => {
     let path = helper.genBasePath(config.baseDir) // 基础目录配置
     path += helper.genDatePath(config.isAutoArchive) // 是否自动归档
     for (let i = 0; i < len; i++) {
-      let file = `${path}${imgList[i].fileName}`
+      let ext = imgList[i].extname
+      let filename = imgList[i].fileName.replace(ext, '')
+      let file = ""
+      if (config.ifAutoRename) {
+        let timestamp = new Date().getTime().toString() + '_'
+        let random = Math.random().toString().slice(-6)
+        file = `${filename}_${timestamp}_${random}${ext}`
+      } else {
+        file = `${filename}${ext}`
+      }
 
       imgList[i]['imgUrl'] = baseURL + file
       imgList[i]['fileName'] = file
@@ -127,18 +136,6 @@ const handle = async (ctx) => {
     // 同名文件处理
     switch (config.sameNameFileProcessingMode) {
       case '覆盖':
-        break
-      case '保留两者':
-        for (let i = 0; i < len; i++) {
-          let ext = imgList[i].extname
-          let filename = imgList[i].fileName.replace(ext, '')
-          let timestamp = new Date().getTime().toString() + '_'
-          let random = Math.random().toString().slice(-6)
-          let file = `${filename}_repeat_${timestamp}_${random}${ext}`
-
-          imgList[i]['imgUrl'] = baseURL + file
-          imgList[i]['fileName'] = file
-        }
         break
       case '跳过':
       default: // 默认：跳过
