@@ -130,9 +130,13 @@ const handle = async (ctx) => {
         break
       case '保留两者':
         for (let i = 0; i < len; i++) {
+          if (!await helper.isFileExistInMinio(imgList[i].fileName)) {
+            continue
+          }
+
           let ext = imgList[i].extname
           let filename = imgList[i].fileName.replace(ext, '')
-          let timestamp = new Date().getTime().toString() + '_'
+          let timestamp = new Date().getTime().toString()
           let random = Math.random().toString().slice(-6)
           let file = `${filename}_repeat_${timestamp}_${random}${ext}`
 
@@ -148,7 +152,7 @@ const handle = async (ctx) => {
           }
         }
 
-        // 清除数组中的空值的匿名函数
+        // 清除数组中的空值
         imgList = imgList.filter(e => e)
         if (len !== imgList.length) {
           let s = len - imgList.length
