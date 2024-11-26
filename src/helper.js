@@ -28,18 +28,13 @@ module.exports = {
       origin = config.customDomain
     }
 
-    if (config.pathFormat.length > 0) {
-      const customPath = config.pathFormat.replace('{bucket}', config.bucket).replace('{key}', '')
-      if (customPath.length === 0) {
-        return `${origin}/`
-      } else if (customPath.endsWith('/')) {
-        return `${origin}/${customPath}`
-      } else {
-        return `${origin}/${customPath}/`
-      }
-    }
+    // 自定义路径
+    let path = config.pathFormat.length > 0 ? config.pathFormat : '/{bucket}/'
+    path = path.replace('{bucket}', config.bucket)
+    if (!path.startsWith('/')) path = '/' + path
+    if (!path.endsWith('/')) path = path + '/'
 
-    return `${origin}/${config.bucket}/`
+    return `${origin}${path}`
   },
 
   // 基础目录配置
